@@ -1,9 +1,22 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+var connectionSqlServer = builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddDbContext<ApplicationDbContext>(options => 
+                 options.UseSqlServer(connectionSqlServer));
+
+builder.Services.AddIdentityApiEndpoints<IdentityUser>()
+                .AddEntityFrameworkStores<ApplicationDbContext>();
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -21,6 +34,8 @@ var summaries = new[]
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
 };
 
+app.MapGroup("/identity").MapIdentityApi<IdentityUser>();
+
 app.MapGet("/weatherforecast", () =>
 {
     var forecast = Enumerable.Range(1, 5).Select(index =>
@@ -33,6 +48,7 @@ app.MapGet("/weatherforecast", () =>
         .ToArray();
     return forecast;
 })
+.RequireAuthorization()
 .WithName("GetWeatherForecast")
 .WithOpenApi();
 
